@@ -5,6 +5,7 @@ const MessageSchema = new mongoose.Schema(
   {
     sender: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     recipient: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    group: { type: mongoose.Schema.Types.ObjectId, ref: "ChatGroup", default: null },
     content: { type: String, required: false },
     roomId: { type: String, required: true },
     // File attachment fields
