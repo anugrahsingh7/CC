@@ -79,7 +79,8 @@ const Notice = () => {
           ) : (
             notices.map((notice, index) => (
               <NoticeCard
-                key={index}
+                key={notice._id || index}
+                id={notice._id}
                 title={notice.title}
                 date={format(
                   parseISO(notice?.createdAt),
@@ -89,7 +90,7 @@ const Notice = () => {
                 profilePhoto={notice?.author?.profileImage}
                 role={notice?.author?.designation}
                 fileUrl={notice.imageUrl}
-                description={notice.description}
+                description={notice.content}
                 department={notice.category}
               />
             ))

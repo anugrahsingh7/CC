@@ -17,6 +17,7 @@ import {
   Star,
   Code,
   Globe,
+  Check,
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -48,6 +49,7 @@ const ProjectCard = ({
   const [commentModal, setCommentModal] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [isLiking, setIsLiking] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   const { user: clerkUser } = useUser();
   useEffect(() => {
@@ -144,6 +146,23 @@ const ProjectCard = ({
     navigate(`/NetworkProfile/${userId}`);
   };
 
+  const handleOptionClick = (action) => {
+    switch (action) {
+      case "profile":
+        navigate(`/NetworkProfile/${userId}`);
+        break;
+      case "share":
+        const shareUrl = `${window.location.origin}/project/${projectId}`;
+        navigator.clipboard.writeText(shareUrl);
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+        break;
+      default:
+        break;
+    }
+    setShowDropdown(false);
+  };
+
   return (
     <div className="relative group mb-6">
       {/* Gradient blur background */}
@@ -194,14 +213,27 @@ const ProjectCard = ({
                 />
                 <div className="absolute right-0 mt-2 w-48 bg-[#040404]/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-[#27dc66]/20 py-2 z-20">
                   <button
-                    onClick={() => {
-                      handleClick();
-                      setShowDropdown(false);
-                    }}
+                    onClick={() => handleOptionClick("profile")}
                     className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#f5f5f5] hover:text-[#27dc66] hover:bg-[#27dc66]/10 w-full text-left transition-all duration-300"
                   >
                     <User size={16} className="text-[#27dc66]" />
                     <span>View Profile</span>
+                  </button>
+                  <button
+                    onClick={() => handleOptionClick("share")}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#f5f5f5] hover:text-[#4790fd] hover:bg-[#4790fd]/10 w-full text-left transition-all duration-300"
+                  >
+                    {isCopied ? (
+                      <>
+                        <Check size={16} className="text-[#27dc66]" />
+                        <span>Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Share2 size={16} className="text-[#4790fd]" />
+                        <span>Share Project</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </>

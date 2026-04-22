@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import EventCard from "../components/EventCard";
-import { Loader2, X, Calendar, Sparkles } from "lucide-react";
+import { Loader2, X, Calendar, Sparkles, Download, Share2, Info, MapPin, Clock, User, Check } from "lucide-react";
 import axios from "axios";
 import { useTheme } from "../context/ThemeContext";
+import { format, parseISO } from "date-fns";
 
 const Events = () => {
   const [events, setEvents] = useState([]);
@@ -10,6 +11,8 @@ const Events = () => {
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [modalImage, setModalImage] = useState(null);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [isCopied, setIsCopied] = useState(false);
   const observerTarget = useRef(null);
   const observerRef = useRef(null);
   const LIMIT = 10; // same limit as on the server
@@ -96,8 +99,16 @@ const Events = () => {
     };
   }, []); // run only once
 
-  const openModal = (imageUrl) => setModalImage(imageUrl);
-  const closeModal = () => setModalImage(null);
+  const openModal = (imageUrl, event) => {
+    setModalImage(imageUrl);
+    setSelectedEvent(event);
+    setIsCopied(false); // Reset copied state when opening new modal
+  };
+  const closeModal = () => {
+    setModalImage(null);
+    setSelectedEvent(null);
+    setIsCopied(false); // Reset copied state when closing
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#070707] text-gray-900 dark:text-[#f5f5f5] relative overflow-hidden transition-colors duration-300">
@@ -128,7 +139,7 @@ const Events = () => {
         <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
           {events.map((event, index) => (
             <EventCard
-              key={event.id || index}
+              key={event._id || index}
               event={event}
               openModal={openModal}
             />
@@ -175,26 +186,156 @@ const Events = () => {
         )}
       </div>
 
-      {/* Image Modal */}
-      {modalImage && (
+      {/* Enhanced Event Modal */}
+      {modalImage && selectedEvent && (
         <div
-          className="fixed inset-0 bg-black/90 dark:bg-[#000000]/90 backdrop-blur-xl z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/95 dark:bg-[#000000]/95 backdrop-blur-2xl z-50 flex items-center justify-center p-4"
           onClick={closeModal}
         >
-          <div className="relative max-w-5xl w-full">
+          <div className="relative max-w-6xl w-full max-h-[95vh] overflow-hidden rounded-2xl">
+            {/* Close Button */}
             <button
               onClick={closeModal}
-              className="absolute -top-12 right-0 text-gray-400 hover:text-white dark:text-[#a0a0a0] dark:hover:text-[#f5f5f5] transition-colors p-2 bg-white/10 dark:bg-[#ffffff]/10 rounded-full hover:bg-white/20 dark:hover:bg-[#ffffff]/20"
+              className="absolute -top-14 right-0 text-gray-300 hover:text-white dark:text-[#a0a0a0] dark:hover:text-[#f5f5f5] transition-colors p-3 bg-black/30 dark:bg-[#000000]/30 rounded-full hover:bg-black/50 dark:hover:bg-[#000000]/50 backdrop-blur-md z-10"
             >
-              <X size={24} />
+              <X size={28} />
             </button>
-            <div className="rounded-3xl overflow-hidden shadow-2xl border border-white/10 dark:border-[#ffffff]/10 bg-black dark:bg-[#000000]">
-              <img
-                src={modalImage}
-                alt="Event"
-                className="w-full h-auto max-h-[85vh] object-contain"
-                onClick={(e) => e.stopPropagation()}
-              />
+            
+            <div className="flex flex-col lg:flex-row bg-[#0a0a0a] dark:bg-[#000000] border border-white/10 dark:border-[#ffffff]/10 shadow-2xl h-full max-h-[90vh]">
+              {/* Poster Section - Enhanced Size */}
+              <div className="lg:w-2/3 relative overflow-hidden bg-black">
+                <img
+                  src={modalImage}
+                  alt={selectedEvent.title}
+                  className="w-full h-full object-contain max-h-[70vh] lg:max-h-none"
+                  onClick={(e) => e.stopPropagation()}
+                />
+                
+                {/* Overlay Gradient */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none"></div>
+                
+                {/* Event Title Overlay */}
+                <div className="absolute bottom-6 left-6 right-6">
+                  <h2 className="text-2xl md:text-3xl font-bold text-white drop-shadow-lg">
+                    {selectedEvent.title}
+                  </h2>
+                </div>
+              </div>
+              
+              {/* Event Details Section */}
+              <div className="lg:w-1/3 bg-[#1a1a1a] dark:bg-[#0a0a0a] p-6 overflow-y-auto flex flex-col">
+                {/* Header */}
+                <div className="mb-6">
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#ece239]/10 text-[#ece239] border border-[#ece239]/30 mb-4">
+                    <Calendar size={16} />
+                    <span className="text-xs font-bold uppercase tracking-wider">Event Details</span>
+                  </div>
+                  <h3 className="text-2xl font-bold text-[#f5f5f5] mb-2">{selectedEvent.title}</h3>
+                  <p className="text-[#a0a0a0] text-sm">{selectedEvent.description || "No description available"}</p>
+                </div>
+                
+                {/* Event Information */}
+                <div className="space-y-5 flex-1">
+                  {/* Date & Time */}
+                  <div className="bg-[#222222]/50 rounded-xl p-4 border border-[#ffffff]/5">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-2 bg-[#4790fd]/20 rounded-lg">
+                        <Calendar size={20} className="text-[#4790fd]" />
+                      </div>
+                      <h4 className="font-semibold text-[#f5f5f5]">Date & Time</h4>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <p className="text-[#a0a0a0] flex items-center gap-2">
+                        <span className="w-2 h-2 bg-[#4790fd] rounded-full"></span>
+                        {format(parseISO(selectedEvent?.createdAt), "EEEE, dd MMM yyyy")}
+                      </p>
+                      <p className="text-[#a0a0a0] flex items-center gap-2">
+                        <span className="w-2 h-2 bg-[#c76191] rounded-full"></span>
+                        {format(parseISO(selectedEvent?.createdAt), "hh:mm a")}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Location */}
+                  <div className="bg-[#222222]/50 rounded-xl p-4 border border-[#ffffff]/5">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-2 bg-[#27dc66]/20 rounded-lg">
+                        <MapPin size={20} className="text-[#27dc66]" />
+                      </div>
+                      <h4 className="font-semibold text-[#f5f5f5]">Location</h4>
+                    </div>
+                    <p className="text-[#a0a0a0] text-sm">
+                      {selectedEvent.location || "On Campus"}
+                    </p>
+                  </div>
+                  
+                  {/* Organizer */}
+                  <div className="bg-[#222222]/50 rounded-xl p-4 border border-[#ffffff]/5">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-2 bg-[#c76191]/20 rounded-lg">
+                        <User size={20} className="text-[#c76191]" />
+                      </div>
+                      <h4 className="font-semibold text-[#f5f5f5]">Organized By</h4>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={selectedEvent.author.profileImage}
+                        alt={selectedEvent.author.fullName}
+                        className="w-10 h-10 rounded-full object-cover ring-2 ring-[#ffffff]/20"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                      <div className="hidden w-10 h-10 rounded-full bg-[#1a1a1a] 
+                        items-center justify-center ring-2 ring-[#ffffff]/20">
+                        <User size={18} className="text-[#a0a0a0]" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-[#f5f5f5]">{selectedEvent.author.fullName}</p>
+                        <p className="text-xs text-[#a0a0a0]">Event Organizer</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-6 border-t border-[#ffffff]/10">
+                  <button
+                    onClick={() => {
+                      const shareUrl = `${window.location.origin}/event/${selectedEvent._id}`;
+                      navigator.clipboard.writeText(shareUrl);
+                      setIsCopied(true);
+                      setTimeout(() => setIsCopied(false), 2000);
+                    }}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl transition-colors font-medium ${
+                      isCopied 
+                        ? 'bg-[#27dc66] text-black' 
+                        : 'bg-[#ece239] text-black hover:bg-[#ece239]/80'
+                    }`}
+                  >
+                    {isCopied ? (
+                      <>
+                        <Check size={18} className="animate-pulse" />
+                        Copied
+                      </>
+                    ) : (
+                      <>
+                        <Share2 size={18} />
+                        Share Event
+                      </>
+                    )}
+                  </button>
+                  <a
+                    href={modalImage}
+                    download={`${selectedEvent.title.replace(/\s+/g, '_')}_poster.jpg`}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#4790fd] text-black hover:bg-[#4790fd]/80 transition-colors font-medium"
+                  >
+                    <Download size={18} />
+                    Download
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
         </div>

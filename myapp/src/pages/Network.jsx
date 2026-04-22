@@ -289,8 +289,8 @@ const Network = () => {
                     }}
                     className={`p-2.5 rounded-xl transition-all duration-300 hover:scale-110 ${
                       isLightMode
-                        ? "bg-[#f0f0f0] hover:bg-[#ece239]/10 text-[#070707]"
-                        : "bg-[#0a0a0a] hover:bg-[#ece239]/10 text-[#f5f5f5]"
+                        ? "bg-[#ece239] text-[#070707] hover:bg-[#ece239]/90"
+                        : "bg-[#ece239] text-[#070707] hover:bg-[#ece239]/90"
                     }`}
                     title="Refresh"
                   >
@@ -298,23 +298,7 @@ const Network = () => {
                       className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
                     />
                   </button>
-                  <button
-                    onClick={() => {
-                      if (activeTab === "posts") {
-                        navigate("/Post");
-                      } else {
-                        navigate("/PostProject");
-                      }
-                    }}
-                    className={`p-2.5 rounded-xl transition-all duration-300 hover:scale-110 ${
-                      isLightMode
-                        ? "bg-[#ece239] text-[#070707] hover:bg-[#ece239]/90"
-                        : "bg-[#ece239] text-[#070707] hover:bg-[#ece239]/90"
-                    }`}
-                    title={`Create ${activeTab === "posts" ? "Post" : "Project"}`}
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
+                  
                 </div>
               </div>
 

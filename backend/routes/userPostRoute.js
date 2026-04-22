@@ -13,6 +13,7 @@ const {
   replyComment,
   updatePost,
   deletePost,
+  getPostById,
 } = require("../controllers/userPostController");
 
 // Rate limiting for post creation/updates
@@ -46,6 +47,7 @@ const upload = multer({
 
 router.post("/create-post", upload.single("file"), postLimiter, createPost);
 router.get("/getAll-post", getPosts);
+router.get("/get-post-by-id/:id", getPostById);
 router.post("/create-comment", createComment);
 router.get("/get-comments/:postId", getComments);
 router.patch("/like/:postId/like-toggle", likePost);

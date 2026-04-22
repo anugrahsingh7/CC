@@ -1,11 +1,13 @@
 import { useUser } from "@clerk/clerk-react";
 import React, { useState } from "react";
-import { Calendar, Clock, Download, Eye, User, FileText, Bell, Star, TrendingUp, X } from 'lucide-react';
+import { Calendar, Clock, Download, Eye, User, FileText, Bell, Star, TrendingUp, X, Share2, Check } from 'lucide-react';
+import A4NoticeModal from './A4NoticeModal';
 
-const NoticeCard = ({ title, date, postedBy, profilePhoto, role, fileUrl, description, department, priority = "normal" }) => {
+const NoticeCard = ({ title, date, postedBy, profilePhoto, role, fileUrl, description, department, priority = "normal", id }) => {
   const { user } = useUser();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
@@ -108,6 +110,32 @@ const NoticeCard = ({ title, date, postedBy, profilePhoto, role, fileUrl, descri
               >
                 <Eye size={18} />
               </button>
+              <button
+                onClick={() => {
+                  const shareUrl = `${window.location.origin}/notice/${id}`;
+                  navigator.clipboard.writeText(shareUrl);
+                  setIsCopied(true);
+                  setTimeout(() => setIsCopied(false), 2000);
+                }}
+                className={`p-2.5 rounded-xl transition-all duration-300 border border-transparent flex items-center gap-2 ${
+                  isCopied 
+                    ? 'bg-[#27dc66]/20 text-[#27dc66] border-[#27dc66]/30' 
+                    : 'bg-[#ffffff]/5 text-[#a0a0a0] hover:bg-[#ece239]/20 hover:text-[#ece239] hover:border-[#ece239]/30'
+                }`}
+                title={isCopied ? "Copied!" : "Share Notice"}
+              >
+                {isCopied ? (
+                  <>
+                    <Check size={18} className="animate-pulse" />
+                    <span className="text-xs font-medium">Copied</span>
+                  </>
+                ) : (
+                  <>
+                    <Share2 size={18} />
+                    <span className="text-xs font-medium">Share</span>
+                  </>
+                )}
+              </button>
               <a
                 href={fileUrl}
                 download
@@ -183,88 +211,18 @@ const NoticeCard = ({ title, date, postedBy, profilePhoto, role, fileUrl, descri
 
       {/* Enhanced Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-[#000000]/80 backdrop-blur-xl flex justify-center items-center z-50 p-4" onClick={handleCloseModal}>
-          <div 
-            className="bg-[#0a0a0a] rounded-3xl w-full max-w-5xl max-h-[95vh] overflow-hidden shadow-2xl border border-[#4790fd]/20 flex flex-col"
-            onClick={e => e.stopPropagation()}
-          >
-            
-            {/* Modal Header */}
-            <div className="p-6 border-b border-[#ffffff]/10 flex-shrink-0 bg-gradient-to-r from-[#4790fd]/5 to-transparent">
-              <div className="flex justify-between items-start">
-                <div className="flex-1 pr-6">
-                  <h2 className="text-2xl sm:text-3xl font-bold text-[#f5f5f5] mb-3">{title}</h2>
-                  <div className="flex flex-wrap items-center gap-4 text-sm text-[#a0a0a0]">
-                    <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#ffffff]/5 border border-[#ffffff]/10">
-                      <Calendar size={14} className="text-[#4790fd]" />
-                      {formattedDate}
-                    </span>
-                    <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#ffffff]/5 border border-[#ffffff]/10">
-                      <Clock size={14} className="text-[#ece239]" />
-                      {formattedTime}
-                    </span>
-                    <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#ffffff]/5 border border-[#ffffff]/10">
-                      <User size={14} className="text-[#c76191]" />
-                      {postedBy}
-                    </span>
-                  </div>
-                </div>
-                <button
-                  onClick={handleCloseModal}
-                  className="p-2 bg-[#ffffff]/5 hover:bg-[#c76191]/20 rounded-full transition-all duration-300
-                    text-[#a0a0a0] hover:text-[#c76191] border border-transparent hover:border-[#c76191]/30"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-            </div>
-
-            {/* Modal Content - Scrollable */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
-              <div className="p-6">
-                {/* Description Box */}
-                <div className="bg-[#1a1a1a]/50 rounded-2xl p-6 mb-6 border border-[#ffffff]/5">
-                  <h3 className="text-[#4790fd] font-semibold mb-3 flex items-center gap-2">
-                    <FileText size={18} />
-                    Description
-                  </h3>
-                  <p className="text-[#d0d0d0] leading-relaxed whitespace-pre-wrap">
-                    {description || "No detailed description available for this notice."}
-                  </p>
-                </div>
-
-                {/* PDF Viewer */}
-                <div className="bg-[#1a1a1a] rounded-2xl overflow-hidden border border-[#ffffff]/10 shadow-lg min-h-[500px]">
-                  <iframe
-                    src={fileUrl}
-                    title="Notice PDF"
-                    className="w-full h-[600px] sm:h-[700px]"
-                    style={{ border: 'none' }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="p-4 border-t border-[#ffffff]/10 bg-[#0a0a0a] flex justify-end gap-3 flex-shrink-0">
-              <button
-                onClick={handleCloseModal}
-                className="px-6 py-2.5 rounded-xl text-[#a0a0a0] hover:bg-[#ffffff]/5 transition-colors font-medium"
-              >
-                Close
-              </button>
-              <a
-                href={fileUrl}
-                download
-                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#4790fd] to-[#27dc66] text-black font-bold
-                  hover:opacity-90 transition-opacity shadow-lg shadow-[#4790fd]/20 flex items-center gap-2"
-              >
-                <Download size={18} />
-                Download PDF
-              </a>
-            </div>
-          </div>
-        </div>
+        <A4NoticeModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          title={title}
+          date={date}
+          postedBy={postedBy}
+          role={role}
+          fileUrl={fileUrl}
+          description={description}
+          department={department}
+          id={id}
+        />
       )}
     </>
   );

@@ -26,6 +26,11 @@ const ChatWindow = ({ user, recipient, onMobileBack }) => {
   const [showReactions, setShowReactions] = useState(null);
   const [reactions, setReactions] = useState({});
   const [showProfilePhotoModal, setShowProfilePhotoModal] = useState(false);
+  // File upload state
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [attachmentMenuOpen, setAttachmentMenuOpen] = useState(false);
+  const fileInputRef = useRef(null);
 
   const roomId = useMemo(() => {
     return user && recipient ? [user._id, recipient._id].sort().join("_") : "";
@@ -173,36 +178,81 @@ const ChatWindow = ({ user, recipient, onMobileBack }) => {
   };
 
   const sendMessage = async () => {
-    if (!message.trim() || !user || !recipient) return;
+    if ((!message.trim() && !selectedFile) || !user || !recipient) return;
 
     const messageId = Date.now().toString();
 
-    const msg = {
-      _id: messageId,
-      sender: { _id: user._id, fullName: user.fullName },
-      content: message,
-      roomId,
-      timestamp: new Date(),
-    };
+    // Handle file upload
+    if (selectedFile) {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append("recipientId", recipient._id);
+      formData.append("content", message.trim());
+      formData.append("userId", user._id);
 
-    socket.emit("send_message", msg);
-    setChat((prev) => [...prev, msg]);
+      try {
+        const response = await axios.post(
+          `${import.meta.env.VITE_BACKEND_URL}/api/chat/chats/file`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+
+        // Create message object for real-time display
+        const msg = {
+          _id: response.data._id,
+          sender: { _id: user._id, fullName: user.fullName },
+          content: message.trim(),
+          roomId,
+          timestamp: response.data.createdAt, // Use database timestamp
+          fileUrl: response.data.fileUrl,
+          fileType: response.data.fileType,
+          fileName: response.data.fileName,
+          fileSize: response.data.fileSize,
+        };
+
+        socket.emit("send_message", msg);
+        setChat((prev) => [...prev, msg]);
+        
+        // Reset file state
+        setSelectedFile(null);
+        setPreviewUrl(null);
+      } catch (err) {
+        console.error("Error uploading file:", err.response?.data || err.message);
+        // Handle error appropriately
+        return;
+      }
+    } else if (message.trim()) {
+      // Handle regular text message
+      try {
+        const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/chat/chats`, {
+          recipientId: recipient._id,
+          content: message,
+          userId: user._id,
+          roomId,
+        });
+
+        const msg = {
+          _id: response.data._id,
+          sender: { _id: user._id, fullName: user.fullName },
+          content: message,
+          roomId,
+          timestamp: response.data.createdAt, // Use database timestamp
+        };
+
+        socket.emit("send_message", msg);
+        setChat((prev) => [...prev, msg]);
+      } catch (err) {
+        console.error("Error sending message:", err.response?.data || err.message);
+        return;
+      }
+    }
+
     setMessage("");
     setShouldScroll(true);
-
-    try {
-      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/chat/chats`, {
-        recipientId: recipient._id,
-        content: message,
-        userId: user._id,
-        roomId,
-      });
-    } catch (err) {
-      console.error(
-        "Error sending message:",
-        err.response?.data || err.message
-      );
-    }
   };
 
   return (
@@ -419,6 +469,87 @@ const ChatWindow = ({ user, recipient, onMobileBack }) => {
 
       {/* Input Area */}
       <div className="relative z-20 border-t border-white/10 bg-black/90 px-3 py-2.5 md:px-4 md:py-3 transition-colors duration-300">
+        {/* File preview */}
+        {selectedFile && (
+          <div className="px-3 py-2 bg-black/80 border-b border-white/10">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                {previewUrl === "video" ? (
+                  <div className="w-12 h-12 bg-[#c76191]/20 rounded-lg flex items-center justify-center border border-[#c76191]/30">
+                    <svg
+                      className="w-6 h-6 text-[#c76191]"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                      />
+                    </svg>
+                  </div>
+                ) : previewUrl === "document" ? (
+                  <div className="w-12 h-12 bg-[#ece239]/20 rounded-lg flex items-center justify-center border border-[#ece239]/30">
+                    <svg
+                      className="w-6 h-6 text-[#ece239]"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                  </div>
+                ) : previewUrl ? (
+                  <img
+                    src={previewUrl}
+                    alt="Preview"
+                    className="w-12 h-12 object-cover rounded-lg border border-white/10"
+                  />
+                ) : (
+                  <div className="w-12 h-12 bg-white/5 rounded-lg flex items-center justify-center border border-white/10">
+                    <svg
+                      className="w-6 h-6 text-white/50"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <span className="text-xs md:text-sm font-medium text-white truncate block">
+                    {selectedFile.name}
+                  </span>
+                  <span className="text-[10px] text-white/60">
+                    {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setSelectedFile(null);
+                  setPreviewUrl(null);
+                }}
+                className="text-white/60 hover:text-white text-sm px-2 py-1 rounded-full hover:bg-white/10 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
         <div className="flex items-end gap-2 relative max-w-4xl mx-auto w-full">
           <button
             className="p-2 md:p-2.5 text-white/60 hover:text-white bg-white/5 hover:bg-white/10 rounded-full border border-white/10 transition-all duration-300"
@@ -442,6 +573,136 @@ const ChatWindow = ({ user, recipient, onMobileBack }) => {
               />
             </div>
           )}
+
+          {/* Attachment button */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setAttachmentMenuOpen(!attachmentMenuOpen)}
+              className="p-2 md:p-2.5 text-white/60 hover:text-white rounded-full hover:bg-white/10 border border-white/10 hover:border-white/40 transition-all duration-300"
+              title="Attach"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                />
+              </svg>
+            </button>
+            {attachmentMenuOpen && (
+              <div className="absolute bottom-14 left-0 bg-black/95 rounded-xl shadow-[0_0_30px_rgba(0,0,0,0.9)] p-2 border border-white/10 z-50">
+                <div className="space-y-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Set accept attribute for images and videos only
+                      fileInputRef.current.accept = "image/*,video/*";
+                      fileInputRef.current.click();
+                      setAttachmentMenuOpen(false);
+                    }}
+                    className="flex items-center gap-2 px-2 py-1.5 hover:bg-white/10 rounded-lg w-full text-xs text-white"
+                  >
+                    <svg
+                      className="w-4 h-4 text-[#4790fd]"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <span>Photo & Video</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Set accept attribute for documents only
+                      fileInputRef.current.accept = "application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain";
+                      fileInputRef.current.click();
+                      setAttachmentMenuOpen(false);
+                    }}
+                    className="flex items-center gap-2 px-2 py-1.5 hover:bg-white/10 rounded-lg w-full text-xs text-white"
+                  >
+                    <svg
+                      className="w-4 h-4 text-[#ece239]"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                    <span>Document</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Set accept attribute for audio files
+                      fileInputRef.current.accept = "audio/*";
+                      fileInputRef.current.click();
+                      setAttachmentMenuOpen(false);
+                    }}
+                    className="flex items-center gap-2 px-2 py-1.5 hover:bg-white/10 rounded-lg w-full text-xs text-white"
+                  >
+                    <svg
+                      className="w-4 h-4 text-[#c76191]"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
+                      />
+                    </svg>
+                    <span>Audio</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Reset to accept all file types
+                      fileInputRef.current.accept = "image/*,video/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,audio/*";
+                      fileInputRef.current.click();
+                      setAttachmentMenuOpen(false);
+                    }}
+                    className="flex items-center gap-2 px-2 py-1.5 hover:bg-white/10 rounded-lg w-full text-xs text-white"
+                  >
+                    <svg
+                      className="w-4 h-4 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                      />
+                    </svg>
+                    <span>Any File</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           <div className="flex-1 bg-white/5 rounded-3xl flex items-center border border-white/10 focus-within:border-[#4790fd]/70 focus-within:ring-2 focus-within:ring-[#4790fd]/30 transition-all duration-300">
             <textarea
@@ -471,14 +732,14 @@ const ChatWindow = ({ user, recipient, onMobileBack }) => {
 
           <button
             className={`p-2.5 md:p-3 rounded-full transition-all duration-300 shadow-lg ${
-              message.trim()
+              (message.trim() || selectedFile)
                 ? "text-white hover:scale-105 active:scale-95"
                 : "text-white/30 cursor-not-allowed"
             }`}
             onClick={sendMessage}
-            disabled={!message.trim()}
+            disabled={!(message.trim() || selectedFile)}
             style={{
-              background: message.trim()
+              background: (message.trim() || selectedFile)
                 ? `linear-gradient(135deg, ${CC_BLUE}, ${CC_GREEN})`
                 : "rgba(15,23,42,0.9)",
             }}
@@ -487,6 +748,32 @@ const ChatWindow = ({ user, recipient, onMobileBack }) => {
           </button>
         </div>
       </div>
+
+      {/* Hidden file input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={(e) => {
+          const file = e.target.files[0];
+          if (file) {
+            setSelectedFile(file);
+            // Handle different file types for preview
+            if (file.type.startsWith("image/")) {
+              const reader = new FileReader();
+              reader.onload = () => setPreviewUrl(reader.result);
+              reader.readAsDataURL(file);
+            } else if (file.type.startsWith("video/")) {
+              // For videos, we'll show a video icon preview
+              setPreviewUrl("video");
+            } else {
+              // For documents and other files, show file icon
+              setPreviewUrl("document");
+            }
+          }
+        }}
+        className="hidden"
+        accept="image/*,video/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,audio/*"
+      />
     </div>
   );
 };

@@ -1,4 +1,3 @@
-// PostCard.jsx
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
@@ -16,6 +15,7 @@ import {
   Eye,
   ThumbsUp,
   Smile,
+  Check,
 } from "lucide-react";
 import { useUser } from "@clerk/clerk-react";
 import { useNavigate } from "react-router";
@@ -41,6 +41,7 @@ const PostCard = ({
   const [commentModal, setCommentModal] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [isLiking, setIsLiking] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -137,6 +138,10 @@ const PostCard = ({
       case "message":
         break;
       case "share":
+        const shareUrl = `${window.location.origin}/post/${postId}`;
+        navigator.clipboard.writeText(shareUrl);
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
         break;
 
       default:

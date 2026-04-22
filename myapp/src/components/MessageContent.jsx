@@ -45,7 +45,12 @@ const MessageContent = ({
         )}
 
         {/* Message content based on type */}
-        <MessageTypeContent message={message} />
+        <MessageTypeContent 
+          message={message} 
+          user={JSON.parse(localStorage.getItem('user') || '{}')}
+          setSelectedImage={() => {}} // Placeholder for now
+          setShowImagePreview={() => {}} // Placeholder for now
+        />
 
         {/* Message actions */}
         {showActions && (

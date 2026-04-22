@@ -29,6 +29,10 @@ import Account from './pages/Account';
 import Search from './pages/Search';
 import HelpSupport from './pages/HelpSupport';
 import ScrollManager from './components/ScrollManager';
+import NoticeDetail from './pages/NoticeDetail'; // New component for notice details
+import EventDetail from './pages/EventDetail'; // New component for event details
+import PostDetail from './pages/PostDetail'; // New component for post details
+import ProjectDetail from './pages/ProjectDetail'; // New component for project details
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
@@ -98,7 +102,11 @@ function App() {
           >
             <Route path="/" element={<Navigate to="/Network" replace />} />
             <Route path="/Notice" element={<Notice />} />
+            <Route path="/notice/:id" element={<NoticeDetail />} />
             <Route path="/Events" element={<Events />} />
+            <Route path="/event/:id" element={<EventDetail />} />
+            <Route path="/post/:id" element={<PostDetail />} />
+            <Route path="/project/:id" element={<ProjectDetail />} />
             <Route path="/Network" element={<Network />} />
             <Route path="/Account" element={<Account />} />
             <Route path="/FacultyPost" element={<FacultyPost />} />

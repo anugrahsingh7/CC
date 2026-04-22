@@ -70,6 +70,23 @@ exports.getPosts = async (req, res) => {
   }
 };
 
+exports.getPostById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const post = await Post.findById(id)
+      .populate("author", "fullName profileImage");
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    res.json({ post });
+  } catch (error) {
+    console.error("Error fetching post by ID:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 exports.createComment = async (req, res) => {
   try {
     const { text, postId, userId } = req.body;

@@ -14,6 +14,7 @@ import {
   ArrowLeft,
   User,
   Loader2,
+  Check,
 } from "lucide-react";
 import Comments from "../components/Comments";
 import axios from "axios";
@@ -48,6 +49,7 @@ function NetworkProfile() {
   const [postCaption, setPostCaption] = useState('');
   const [projectTitle, setProjectTitle] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
+  const [isCopied, setIsCopied] = useState(false);
   const [projectGithubUrl, setProjectGithubUrl] = useState('');
   const [projectDemoUrl, setProjectDemoUrl] = useState('');
   const [projectTechStack, setProjectTechStack] = useState('');
@@ -660,6 +662,29 @@ function NetworkProfile() {
                           </div>
                         )}
 
+                      {/* Share button */}
+                      <button
+                        className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-sm transition-all duration-300 ${
+                          isCopied 
+                            ? 'bg-[#27dc66]/70 text-white' 
+                            : 'bg-[#070707]/70 text-white hover:bg-[#070707]/90'
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const shareUrl = `${window.location.origin}/post/${post._id}`;
+                          navigator.clipboard.writeText(shareUrl);
+                          setIsCopied(true);
+                          setTimeout(() => setIsCopied(false), 2000);
+                        }}
+                        title={isCopied ? "Copied!" : "Share post"}
+                      >
+                        {isCopied ? (
+                          <Check size={16} className="animate-pulse" />
+                        ) : (
+                          <Share2 size={16} />
+                        )}
+                      </button>
+
                       {/* Edit/Delete buttons for owner */}
                       {user?._id === currUserId && (
                         <div className="absolute top-3 left-3 flex gap-2">
@@ -749,6 +774,29 @@ function NetworkProfile() {
                         </div>
                       </div>
                       
+                      {/* Share button */}
+                      <button
+                        className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-sm transition-all duration-300 ${
+                          isCopied 
+                            ? 'bg-[#27dc66]/70 text-white' 
+                            : 'bg-[#070707]/70 text-white hover:bg-[#070707]/90'
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const shareUrl = `${window.location.origin}/project/${project._id}`;
+                          navigator.clipboard.writeText(shareUrl);
+                          setIsCopied(true);
+                          setTimeout(() => setIsCopied(false), 2000);
+                        }}
+                        title={isCopied ? "Copied!" : "Share project"}
+                      >
+                        {isCopied ? (
+                          <Check size={16} className="animate-pulse" />
+                        ) : (
+                          <Share2 size={16} />
+                        )}
+                      </button>
+
                       {/* Edit/Delete buttons for owner */}
                       {user?._id === currUserId && (
                         <div className="absolute top-3 right-3 flex gap-2">

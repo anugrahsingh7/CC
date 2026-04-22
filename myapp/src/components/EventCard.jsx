@@ -1,9 +1,10 @@
 import { format, parseISO } from "date-fns";
 import React, { useState } from "react";
-import { Calendar, Clock, MapPin, User, Eye, ExternalLink } from 'lucide-react';
+import { Calendar, Clock, MapPin, User, Eye, ExternalLink, Share2, Check } from 'lucide-react';
 
 const EventCard = ({ event, openModal }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -44,7 +45,7 @@ const EventCard = ({ event, openModal }) => {
       {/* Poster with Hover Effect */}
       <div
         className="relative aspect-[4/3] overflow-hidden cursor-pointer"
-        onClick={() => openModal(event.imageUrl)}
+        onClick={() => openModal(event.imageUrl, event)}
       >
         {!event.imageUrl ? (
           <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] flex items-center justify-center text-[#f5f5f5]">
@@ -86,7 +87,7 @@ const EventCard = ({ event, openModal }) => {
       <div className="relative p-5 flex flex-col flex-1">
         {/* Title */}
         <h2 className="text-xl font-bold text-[#f5f5f5] mb-3 line-clamp-2 group-hover:text-[#ece239] transition-colors cursor-pointer"
-            onClick={() => openModal(event.imageUrl)}>
+            onClick={() => openModal(event.imageUrl, event)}>
           {event.title}
         </h2>
 
@@ -132,8 +133,37 @@ const EventCard = ({ event, openModal }) => {
             </div>
           </div>
           
-          <div className="px-2.5 py-1 rounded-full bg-[#ffffff]/5 text-[#a0a0a0] text-xs font-medium border border-[#ffffff]/10 group-hover:border-[#ece239]/30 transition-colors">
-            {relative}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const shareUrl = `${window.location.origin}/event/${event._id}`;
+                navigator.clipboard.writeText(shareUrl);
+                setIsCopied(true);
+                setTimeout(() => setIsCopied(false), 2000);
+              }}
+              className={`p-2 rounded-lg transition-all duration-300 border flex items-center gap-1 text-xs font-medium ${
+                isCopied 
+                  ? 'bg-[#27dc66]/20 text-[#27dc66] border-[#27dc66]/30' 
+                  : 'bg-[#ffffff]/5 text-[#a0a0a0] hover:bg-[#ece239]/20 hover:text-[#ece239] border-transparent hover:border-[#ece239]/30'
+              }`}
+              title={isCopied ? "Copied!" : "Share Event"}
+            >
+              {isCopied ? (
+                <>
+                  <Check size={14} className="animate-pulse" />
+                  Copied
+                </>
+              ) : (
+                <>
+                  <Share2 size={14} />
+                  Share
+                </>
+              )}
+            </button>
+            <div className="px-2.5 py-1 rounded-full bg-[#ffffff]/5 text-[#a0a0a0] text-xs font-medium border border-[#ffffff]/10 group-hover:border-[#ece239]/30 transition-colors">
+              {relative}
+            </div>
           </div>
         </div>
       </div>
