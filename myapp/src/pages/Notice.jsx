@@ -30,7 +30,15 @@ const Notice = () => {
       if (newPost.length === 0) {
         setHasMore(false); // No more notices to fetch
       } else {
-        setNotices((prev) => [...prev, ...newPost]);
+        setNotices((prev) => {
+          const allNotices = [...prev, ...newPost];
+          // Filter to ensure unique notices by _id
+          const uniqueNotices = allNotices.filter(
+            (notice, index, self) =>
+              index === self.findIndex((n) => n._id === notice._id),
+          );
+          return uniqueNotices;
+        });
       }
     } catch (err) {
       console.error("Error fetching notices:", err);
@@ -52,13 +60,16 @@ const Notice = () => {
       <div className="relative z-10 pt-10 pb-8 px-4 sm:px-6 lg:px-8 text-center">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/50 dark:bg-[#1a1a1a]/50 border border-gray-200 dark:border-[#4790fd]/20 mb-6 backdrop-blur-md shadow-sm dark:shadow-none">
           <Bell className="w-4 h-4 text-yellow-500 dark:text-[#ece239]" />
-          <span className="text-xs font-medium text-gray-600 dark:text-[#a0a0a0] uppercase tracking-wider">Campus Updates</span>
+          <span className="text-xs font-medium text-gray-600 dark:text-[#a0a0a0] uppercase tracking-wider">
+            Campus Updates
+          </span>
         </div>
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-gray-900 via-blue-600 to-gray-900 dark:from-[#f5f5f5] dark:via-[#4790fd] dark:to-[#f5f5f5] mb-4">
           Notice Board
         </h1>
         <p className="text-gray-600 dark:text-[#a0a0a0] text-lg max-w-2xl mx-auto font-light leading-relaxed">
-          Stay informed with the latest announcements, schedules, and important updates from the administration.
+          Stay informed with the latest announcements, schedules, and important
+          updates from the administration.
         </p>
       </div>
 
@@ -74,7 +85,9 @@ const Notice = () => {
               <h3 className="text-2xl font-bold text-gray-900 dark:text-[#f5f5f5] mb-2">
                 No Notices Yet
               </h3>
-              <p className="text-gray-500 dark:text-[#a0a0a0]">Check back later for important updates</p>
+              <p className="text-gray-500 dark:text-[#a0a0a0]">
+                Check back later for important updates
+              </p>
             </div>
           ) : (
             notices.map((notice, index) => (
@@ -84,7 +97,7 @@ const Notice = () => {
                 title={notice.title}
                 date={format(
                   parseISO(notice?.createdAt),
-                  "dd MMM yyyy, hh:mm a"
+                  "dd MMM yyyy, hh:mm a",
                 )}
                 postedBy={notice?.author?.fullName}
                 profilePhoto={notice?.author?.profileImage}
@@ -113,16 +126,18 @@ const Notice = () => {
         {!loading && hasMore && notices.length > 0 && (
           <div className="text-center mt-12">
             <button
-              onClick={() => setPage(prev => prev + 1)}
+              onClick={() => setPage((prev) => prev + 1)}
               className="group relative px-8 py-3 rounded-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#ffffff]/10 text-gray-900 dark:text-[#f5f5f5] font-medium 
                 hover:border-blue-500/50 dark:hover:border-[#4790fd]/50 transition-all duration-300 overflow-hidden shadow-sm dark:shadow-none"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-500/10 to-blue-500/0 dark:from-[#4790fd]/0 dark:via-[#4790fd]/10 dark:to-[#4790fd]/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-              <span className="relative z-10 group-hover:text-blue-600 dark:group-hover:text-[#4790fd] transition-colors">Load More Notices</span>
+              <span className="relative z-10 group-hover:text-blue-600 dark:group-hover:text-[#4790fd] transition-colors">
+                Load More Notices
+              </span>
             </button>
           </div>
         )}
-        
+
         {/* End of Content Message */}
         {!hasMore && notices.length > 0 && (
           <div className="text-center py-12">

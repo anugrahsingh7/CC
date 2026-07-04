@@ -77,7 +77,7 @@ const PostCard = ({
       setCurrUserId(data._id);
     } catch (error) {
       console.error("Error fetching profile:", error);
-      toast.error("Failed to load profile.");
+      // Removed toast.error to prevent spam
     }
   };
 

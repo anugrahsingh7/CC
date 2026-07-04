@@ -40,7 +40,9 @@ const Aside = () => {
       hasSubMenu: true,
       subMenuItems: [
         { label: "General Post", path: "/Post", icon: "📝" },
-        { label: "Faculty Post", path: "/FacultyPost", icon: "👨‍🏫" },
+        ...(mainUser?.role === "faculty"
+          ? [{ label: "Faculty Post", path: "/FacultyPost", icon: "👨‍🏫" }]
+          : []),
         { label: "Project Post", path: "/PostProject", icon: "💼" },
       ],
     },
@@ -75,13 +77,13 @@ const Aside = () => {
     if (!user) return;
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/api/user/profile/${user.id}`
+        `${import.meta.env.VITE_BACKEND_URL}/api/user/profile/${user.id}`,
       );
       const data = response.data;
       setMainUser(data);
     } catch (error) {
       console.error("Error fetching profile:", error);
-      toast.error("Failed to load profile.");
+      // Removed toast.error to prevent spam
     }
   }, [user]);
 
@@ -135,10 +137,12 @@ const Aside = () => {
     return (
       <nav className="fixed bottom-0 left-0 right-0 w-full bg-[#040404]/95 backdrop-blur-xl border-t border-[#4790fd]/20 z-50 shadow-[0_-4px_20px_rgba(71,144,253,0.15)]">
         {/* Mobile Logo Header */}
-        
+
         <div className="grid grid-cols-6 gap-1 items-center py-2.5 px-2 w-full">
           {navItems.map((item) => {
-            const active = isActive(item.path) || (item.hasSubMenu && isSubMenuActive(item.subMenuItems));
+            const active =
+              isActive(item.path) ||
+              (item.hasSubMenu && isSubMenuActive(item.subMenuItems));
             return (
               <button
                 key={item.label}
@@ -225,7 +229,11 @@ const Aside = () => {
         </div>
         <nav className="flex flex-col gap-3 flex-1">
           {navItems.map((item) => {
-            const active = isActive(item.path) || (item.hasSubMenu && expanded === item.label && isSubMenuActive(item.subMenuItems));
+            const active =
+              isActive(item.path) ||
+              (item.hasSubMenu &&
+                expanded === item.label &&
+                isSubMenuActive(item.subMenuItems));
             return (
               <React.Fragment key={item.label}>
                 <button
@@ -304,7 +312,9 @@ const Aside = () => {
                     <span className="text-2xl transition-transform duration-300 group-hover:scale-110">
                       {subItem.icon}
                     </span>
-                    <span className="text-base font-medium flex-1">{subItem.label}</span>
+                    <span className="text-base font-medium flex-1">
+                      {subItem.label}
+                    </span>
                     {isActive(subItem.path) && (
                       <div className="w-2 h-2 bg-[#4790fd] rounded-full animate-pulse"></div>
                     )}
@@ -319,14 +329,19 @@ const Aside = () => {
 
   // Desktop sidebar navigation
   return (
-    <aside className={`bg-[#070707]  text-white w-64 min-h-screen flex flex-col py-6 px-4 border-r border-[#4790fd]/30 relative shadow-[4px_0_30px_rgba(71,144,253,0.2)] overflow-hidden ${isLightMode ? "bg-[#f5f5f5]" : "bg-[#070707]"}`}>
+    <aside
+      className={`bg-[#070707]  text-white w-64 min-h-screen flex flex-col py-6 px-4 border-r border-[#4790fd]/30 relative shadow-[4px_0_30px_rgba(71,144,253,0.2)] overflow-hidden ${isLightMode ? "bg-[#f5f5f5]" : "bg-[#070707]"}`}
+    >
       {/* Animated background gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#4790fd]/10 via-transparent to-[#27dc66]/5 pointer-events-none"></div>
       <div className="absolute top-0 right-0 w-64 h-64 bg-[#4790fd]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
       <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#27dc66]/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
-      
+
       {/* Logo Section */}
-      <a href="/" className="mb-8 flex items-center gap-3 relative z-10 group cursor-pointer">
+      <a
+        href="/"
+        className="mb-8 flex items-center gap-3 relative z-10 group cursor-pointer"
+      >
         <div className="relative flex items-center">
           <img
             className="h-14 w-14 object-contain drop-shadow-lg"
@@ -348,7 +363,11 @@ const Aside = () => {
       {/* Navigation */}
       <nav className="flex flex-col gap-2 flex-1 relative z-10">
         {navItems.map((item) => {
-          const active = isActive(item.path) || (item.hasSubMenu && expanded === item.label && isSubMenuActive(item.subMenuItems));
+          const active =
+            isActive(item.path) ||
+            (item.hasSubMenu &&
+              expanded === item.label &&
+              isSubMenuActive(item.subMenuItems));
           return (
             <React.Fragment key={item.label}>
               <button
@@ -360,11 +379,10 @@ const Aside = () => {
                 onClick={() => handleNavClick(item)}
               >
                 {/* Active indicator bar */}
-               
-                
+
                 {/* Hover effect overlay */}
                 <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                
+
                 <span
                   className={`text-2xl flex-shrink-0 transition-all duration-300 relative z-10 ${
                     active
@@ -376,7 +394,9 @@ const Aside = () => {
                 </span>
                 <span
                   className={`text-base font-semibold flex-1 relative z-10 transition-all duration-300 ${
-                    active ? "text-white" : "text-white/95 group-hover:text-white"
+                    active
+                      ? "text-white"
+                      : "text-white/95 group-hover:text-white"
                   }`}
                 >
                   {item.label}
@@ -384,19 +404,21 @@ const Aside = () => {
                 {item.hasSubMenu && (
                   <span
                     className={`text-xl flex-shrink-0 transition-all duration-300 relative z-10 ${
-                      expanded === item.label ? "rotate-180 text-white" : "text-white/70 group-hover:text-white"
+                      expanded === item.label
+                        ? "rotate-180 text-white"
+                        : "text-white/70 group-hover:text-white"
                     }`}
                   >
                     <MdKeyboardArrowDown />
                   </span>
                 )}
-                
+
                 {/* Active pulse effect */}
                 {active && (
                   <div className="absolute inset-0 rounded-xl bg-[#4790fd]/10 animate-pulse"></div>
                 )}
               </button>
-              
+
               {/* Submenu */}
               {item.hasSubMenu && expanded === item.label && (
                 <div className="flex flex-col pl-14 gap-2 mt-1 animate-fadeIn">
@@ -415,11 +437,10 @@ const Aside = () => {
                       style={{ animationDelay: `${index * 50}ms` }}
                     >
                       {/* Active indicator */}
-                      
-                      
+
                       {/* Hover shimmer */}
                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] group-hover/sub:translate-x-[100%] transition-transform duration-700"></div>
-                      
+
                       <span className="relative z-10 flex items-center gap-2">
                         <span className="text-base">{subItem.icon}</span>
                         <span>{subItem.label}</span>

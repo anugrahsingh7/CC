@@ -63,7 +63,14 @@ const Events = () => {
 
       // Append the new events
       if (newEvents.length > 0) {
-        setEvents((prev) => [...prev, ...newEvents]);
+        setEvents((prev) => {
+          const allEvents = [...prev, ...newEvents];
+          // Filter to ensure unique events by _id
+          return allEvents.filter(
+            (event, index, self) =>
+              index === self.findIndex((e) => e._id === event._id),
+          );
+        });
       }
     } catch (error) {
       console.error("Error fetching events:", error);

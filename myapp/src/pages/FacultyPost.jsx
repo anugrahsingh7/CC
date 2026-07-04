@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   UploadCloud,
@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 // import { showToast } from "../components/CustomToast"; // Component not found
 import { useUser } from "@clerk/clerk-react";
+import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
 import { useTheme } from "../context/ThemeContext";
@@ -23,6 +24,8 @@ const FacultyPost = () => {
   const { user } = useUser();
   const { isDarkMode } = useTheme();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFaculty, setIsFaculty] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -30,6 +33,29 @@ const FacultyPost = () => {
     postType: "Notice",
     link: "",
   });
+
+  useEffect(() => {
+    const checkFacultyRole = async () => {
+      if (!user) return;
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/user/profile/${user.id}`,
+        );
+        if (response.data.role !== "faculty") {
+          toast.error("Access denied. Only faculty members can post here.");
+          navigate("/");
+        } else {
+          setIsFaculty(true);
+        }
+      } catch (error) {
+        console.error("Error checking faculty role:", error);
+        navigate("/");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    checkFacultyRole();
+  }, [user, navigate]);
 
   const postTypeIcons = {
     Notice: <FileText className="w-5 h-5" />,
@@ -46,6 +72,7 @@ const FacultyPost = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!isFaculty) return;
     setIsSubmitting(true);
     try {
       const response = await axios.get(
@@ -84,12 +111,23 @@ const FacultyPost = () => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#070707]">
+        <Loader2 className="w-10 h-10 text-[#4790fd] animate-spin" />
+      </div>
+    );
+  }
+
+  if (!isFaculty) return null;
+
   return (
     <div
       className={`min-h-screen py-6 px-3 sm:py-8 sm:px-4 md:px-6 relative overflow-hidden transition-colors duration-300 ${
         isDarkMode ? "bg-[#070707] text-[#f5f5f5]" : "bg-[#f5f5f5] text-[#070707]"
       }`}
     >
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover theme="dark" />
       {/* Background gradients */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-0 w-96 h-96 bg-[#27dc66]/5 rounded-full blur-3xl"></div>

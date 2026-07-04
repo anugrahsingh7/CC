@@ -384,6 +384,16 @@ io.on("connection", (socket) => {
     });
   });
 
+  socket.on("message_updated", ({ message }) => {
+    if (!message || !message.roomId) return;
+    io.to(message.roomId).emit("message_updated", message);
+  });
+
+  socket.on("message_deleted", ({ messageId, roomId, deletedForEveryone }) => {
+    if (!messageId || !roomId) return;
+    io.to(roomId).emit("message_deleted", { messageId, deletedForEveryone });
+  });
+
   socket.on("disconnect", () => {
     // Clean up old connections periodically
     if (socketConnections.has(clientIP)) {

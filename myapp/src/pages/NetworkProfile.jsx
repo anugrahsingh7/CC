@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { extractUserIdFromParams, generateProfileUrl, formatNameForUrl } from "../utils/urlHelpers";
+import {
+  extractUserIdFromParams,
+  generateProfileUrl,
+  formatNameForUrl,
+} from "../utils/urlHelpers";
 import {
   X,
   Share2,
@@ -27,7 +31,7 @@ function NetworkProfile() {
   const location = useLocation();
   const params = useParams();
   const userData = location.state?.userData;
-  
+
   // Extract userId from URL params (handles both /:userId and /:name/:userId formats)
   const userId = extractUserIdFromParams(params) || userData?.userId;
   const [activeTab, setActiveTab] = useState("posts");
@@ -46,13 +50,13 @@ function NetworkProfile() {
   const [editingProject, setEditingProject] = useState(null);
   const [isEditPostModalOpen, setIsEditPostModalOpen] = useState(false);
   const [isEditProjectModalOpen, setIsEditProjectModalOpen] = useState(false);
-  const [postCaption, setPostCaption] = useState('');
-  const [projectTitle, setProjectTitle] = useState('');
-  const [projectDescription, setProjectDescription] = useState('');
+  const [postCaption, setPostCaption] = useState("");
+  const [projectTitle, setProjectTitle] = useState("");
+  const [projectDescription, setProjectDescription] = useState("");
   const [isCopied, setIsCopied] = useState(false);
-  const [projectGithubUrl, setProjectGithubUrl] = useState('');
-  const [projectDemoUrl, setProjectDemoUrl] = useState('');
-  const [projectTechStack, setProjectTechStack] = useState('');
+  const [projectGithubUrl, setProjectGithubUrl] = useState("");
+  const [projectDemoUrl, setProjectDemoUrl] = useState("");
+  const [projectTechStack, setProjectTechStack] = useState("");
   const [newPostMedia, setNewPostMedia] = useState(null);
   const [newProjectMedia, setNewProjectMedia] = useState(null);
   const { isDarkMode } = useTheme();
@@ -65,7 +69,7 @@ function NetworkProfile() {
 
   // Update document title (removed user name for privacy)
   useEffect(() => {
-    document.title = 'Profile - Campus Connect';
+    document.title = "Profile - Campus Connect";
   }, []);
 
   // Update URL to include user name for better SEO and sharing (name-first format)
@@ -73,9 +77,12 @@ function NetworkProfile() {
     if (user?.fullName && userId && !params.name) {
       const nameSlug = formatNameForUrl(user.fullName);
       // Only update URL if we have the name and it's not already in the URL
-      if (nameSlug && window.location.pathname === `/NetworkProfile/${userId}`) {
+      if (
+        nameSlug &&
+        window.location.pathname === `/NetworkProfile/${userId}`
+      ) {
         const newUrl = `/NetworkProfile/${nameSlug}/${userId}`;
-        window.history.replaceState({}, '', newUrl);
+        window.history.replaceState({}, "", newUrl);
       }
     }
   }, [user?.fullName, userId, params.name]);
@@ -85,18 +92,18 @@ function NetworkProfile() {
       const [userResponse, postResponse, userAuthResponse, projectResponse] =
         await Promise.all([
           axios.get(
-            `${import.meta.env.VITE_BACKEND_URL}/api/user/profileById/${userId}`
+            `${import.meta.env.VITE_BACKEND_URL}/api/user/profileById/${userId}`,
           ),
           axios.get(
-            `${import.meta.env.VITE_BACKEND_URL}/api/user/posts/${userId}`
+            `${import.meta.env.VITE_BACKEND_URL}/api/user/posts/${userId}`,
           ),
           axios.get(
             `${import.meta.env.VITE_BACKEND_URL}/api/user/profile/${
               clerkUser.id
-            }`
+            }`,
           ),
           axios.get(
-            `${import.meta.env.VITE_BACKEND_URL}/api/project/get-project/${userId}`
+            `${import.meta.env.VITE_BACKEND_URL}/api/project/get-project/${userId}`,
           ),
         ]);
       const data = userResponse.data;
@@ -109,34 +116,41 @@ function NetworkProfile() {
       setProjects(projects);
     } catch (error) {
       console.error("Error fetching profile:", error);
-      toast.error("Failed to load profile.");
+      // Removed toast.error to prevent spam on the network page
     }
-};
+  };
 
   const handleEditPost = (post) => {
     setEditingPost(post);
-    setPostCaption(post.caption || '');
+    setPostCaption(post.caption || "");
     setIsEditPostModalOpen(true);
   };
 
   const handleEditProject = (project) => {
     setEditingProject(project);
-    setProjectTitle(project.title || '');
-    setProjectDescription(project.description || '');
-    setProjectGithubUrl(project.githubUrl || '');
-    setProjectDemoUrl(project.projectUrl || '');
-    setProjectTechStack(Array.isArray(project.TechStack) ? project.TechStack.join(',') : project.TechStack || '');
+    setProjectTitle(project.title || "");
+    setProjectDescription(project.description || "");
+    setProjectGithubUrl(project.githubUrl || "");
+    setProjectDemoUrl(project.projectUrl || "");
+    setProjectTechStack(
+      Array.isArray(project.TechStack)
+        ? project.TechStack.join(",")
+        : project.TechStack || "",
+    );
     setIsEditProjectModalOpen(true);
   };
 
   const handleDeletePost = async (postId) => {
     if (window.confirm("Are you sure you want to delete this post?")) {
       try {
-        await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/api/post/delete-post/${postId}`, {
-          data: { author: currUserId }
-        });
+        await axios.delete(
+          `${import.meta.env.VITE_BACKEND_URL}/api/post/delete-post/${postId}`,
+          {
+            data: { author: currUserId },
+          },
+        );
         // Update local state to remove the deleted post
-        setPosts(posts.filter(post => post._id !== postId));
+        setPosts(posts.filter((post) => post._id !== postId));
         toast.success("Post deleted successfully!");
       } catch (error) {
         console.error("Error deleting post:", error);
@@ -148,11 +162,14 @@ function NetworkProfile() {
   const handleDeleteProject = async (projectId) => {
     if (window.confirm("Are you sure you want to delete this project?")) {
       try {
-        await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/api/project/delete-project/${projectId}`, {
-          data: { userId: currUserId }
-        });
+        await axios.delete(
+          `${import.meta.env.VITE_BACKEND_URL}/api/project/delete-project/${projectId}`,
+          {
+            data: { userId: currUserId },
+          },
+        );
         // Update local state to remove the deleted project
-        setProjects(projects.filter(project => project._id !== projectId));
+        setProjects(projects.filter((project) => project._id !== projectId));
         toast.success("Project deleted successfully!");
       } catch (error) {
         console.error("Error deleting project:", error);
@@ -164,31 +181,41 @@ function NetworkProfile() {
   const updatePost = async () => {
     try {
       const formData = new FormData();
-      formData.append('caption', postCaption);
-      formData.append('author', currUserId);
-      
+      formData.append("caption", postCaption);
+      formData.append("author", currUserId);
+
       if (newPostMedia) {
-        formData.append('file', newPostMedia);
+        formData.append("file", newPostMedia);
       }
-      
-      await axios.patch(`${import.meta.env.VITE_BACKEND_URL}/api/post/update-post/${editingPost._id}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
+
+      await axios.patch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/post/update-post/${editingPost._id}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
         },
-      });
-      
+      );
+
       // Update the post in local state
-      const updatedPosts = posts.map(post => {
+      const updatedPosts = posts.map((post) => {
         if (post._id === editingPost._id) {
-          return { ...post, caption: postCaption, mediaUrl: newPostMedia ? URL.createObjectURL(newPostMedia) : post.mediaUrl };
+          return {
+            ...post,
+            caption: postCaption,
+            mediaUrl: newPostMedia
+              ? URL.createObjectURL(newPostMedia)
+              : post.mediaUrl,
+          };
         }
         return post;
       });
-      
+
       setPosts(updatedPosts);
       setIsEditPostModalOpen(false);
       setEditingPost(null);
-      setPostCaption('');
+      setPostCaption("");
       setNewPostMedia(null);
       toast.success("Post updated successfully!");
     } catch (error) {
@@ -200,46 +227,61 @@ function NetworkProfile() {
   const updateProject = async () => {
     try {
       const formData = new FormData();
-      formData.append('title', projectTitle);
-      formData.append('description', projectDescription);
-      formData.append('githubUrl', projectGithubUrl);
-      formData.append('projectUrl', projectDemoUrl);
-      formData.append('TechStack', JSON.stringify(projectTechStack.split(',').map(tech => tech.trim()).filter(tech => tech)));
-      formData.append('userId', currUserId);
-      
+      formData.append("title", projectTitle);
+      formData.append("description", projectDescription);
+      formData.append("githubUrl", projectGithubUrl);
+      formData.append("projectUrl", projectDemoUrl);
+      formData.append(
+        "TechStack",
+        JSON.stringify(
+          projectTechStack
+            .split(",")
+            .map((tech) => tech.trim())
+            .filter((tech) => tech),
+        ),
+      );
+      formData.append("userId", currUserId);
+
       if (newProjectMedia) {
-        formData.append('image', newProjectMedia);
+        formData.append("image", newProjectMedia);
       }
-      
-      await axios.patch(`${import.meta.env.VITE_BACKEND_URL}/api/project/update-project/${editingProject._id}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
+
+      await axios.patch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/project/update-project/${editingProject._id}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
         },
-      });
-      
+      );
+
       // Update the project in local state
-      const updatedProjects = projects.map(project => {
+      const updatedProjects = projects.map((project) => {
         if (project._id === editingProject._id) {
-          return { 
-            ...project, 
-            title: projectTitle, 
-            description: projectDescription, 
-            githubUrl: projectGithubUrl, 
+          return {
+            ...project,
+            title: projectTitle,
+            description: projectDescription,
+            githubUrl: projectGithubUrl,
             projectUrl: projectDemoUrl,
-            TechStack: projectTechStack.split(',').map(tech => tech.trim()).filter(tech => tech)
+            TechStack: projectTechStack
+              .split(",")
+              .map((tech) => tech.trim())
+              .filter((tech) => tech),
           };
         }
         return project;
       });
-      
+
       setProjects(updatedProjects);
       setIsEditProjectModalOpen(false);
       setEditingProject(null);
-      setProjectTitle('');
-      setProjectDescription('');
-      setProjectGithubUrl('');
-      setProjectDemoUrl('');
-      setProjectTechStack('');
+      setProjectTitle("");
+      setProjectDescription("");
+      setProjectGithubUrl("");
+      setProjectDemoUrl("");
+      setProjectTechStack("");
       setNewProjectMedia(null);
       toast.success("Project updated successfully!");
     } catch (error) {
@@ -254,7 +296,7 @@ function NetworkProfile() {
         const response = await axios.get(
           `${import.meta.env.VITE_BACKEND_URL}/api/post/like/${
             selectedPost._id
-          }`
+          }`,
         );
         const likedUsers = response.data.likedByUsers;
         setLikedByCurrentUser(likedUsers.some((user) => user === currUserId));
@@ -271,10 +313,28 @@ function NetworkProfile() {
   useEffect(() => {
     const checkCategoryStatus = async () => {
       try {
+        const [targetUserRes, currentUserRes] = await Promise.all([
+          axios.get(
+            `${import.meta.env.VITE_BACKEND_URL}/api/user/profileById/${userId}`,
+          ),
+          axios.get(
+            `${import.meta.env.VITE_BACKEND_URL}/api/user/profile/${clerkUser.id}`,
+          ),
+        ]);
+
+        const targetUser = targetUserRes.data;
+        const currentUser = currentUserRes.data;
+
+        // If either user is faculty, they are treated as connected
+        if (targetUser?.role === "faculty" || currentUser?.role === "faculty") {
+          setCategory("accepted");
+          return;
+        }
+
         const response = await axios.get(
           `${
             import.meta.env.VITE_BACKEND_URL
-          }/api/user/isPending/${currUserId}?receiverId=${user._id}`
+          }/api/user/isPending/${currUserId}?receiverId=${user._id}`,
         );
         setCategory(response.data?.category);
       } catch (error) {
@@ -288,6 +348,7 @@ function NetworkProfile() {
   }, [currUserId, user]);
 
   const handleClick = async () => {
+    if (category === "accepted") return;
     try {
       const res = await axios.patch(
         `${
@@ -295,7 +356,7 @@ function NetworkProfile() {
         }/api/user/updateConnectionsPending/${currUserId}`,
         {
           receiverId: user._id,
-        }
+        },
       );
       setCategory("pending");
       toast.success("Connection sent successfully!");
@@ -307,7 +368,7 @@ function NetworkProfile() {
   const handleShareProfile = async () => {
     try {
       // Generate URL with user's name if available
-      const profileUrl = user?.fullName 
+      const profileUrl = user?.fullName
         ? `${window.location.origin}${generateProfileUrl(userId, user.fullName)}`
         : `${window.location.origin}/NetworkProfile/${userId}`;
       await navigator.clipboard.writeText(profileUrl);
@@ -323,7 +384,7 @@ function NetworkProfile() {
         `${import.meta.env.VITE_BACKEND_URL}/api/post/like/${
           selectedPost._id
         }/like-toggle`,
-        { userId: currUserId }
+        { userId: currUserId },
       );
       const updatedPost = {
         ...selectedPost,
@@ -356,7 +417,7 @@ function NetworkProfile() {
         formData,
         {
           headers: { "Content-Type": "application/json" },
-        }
+        },
       );
       setCommentText("");
       toast.success(`Comment posted successfully!`);
@@ -369,7 +430,9 @@ function NetworkProfile() {
   return (
     <div
       className={`min-h-screen relative transition-colors duration-300 ${
-        isDarkMode ? "bg-[#070707] text-[#f5f5f5]" : "bg-[#f5f5f5] text-[#070707]"
+        isDarkMode
+          ? "bg-[#070707] text-[#f5f5f5]"
+          : "bg-[#f5f5f5] text-[#070707]"
       }`}
     >
       {/* Background gradients */}
@@ -395,7 +458,7 @@ function NetworkProfile() {
         <div className="relative group mb-8">
           {/* Gradient blur background */}
           <div className="absolute inset-0 bg-gradient-to-br from-[#4790fd]/10 via-[#c76191]/5 to-[#27dc66]/10 rounded-3xl blur-xl opacity-50"></div>
-                      
+
           {/* Card */}
           <div className="relative bg-[#040404]/80 backdrop-blur-2xl rounded-3xl border border-[#4790fd]/20 p-6 sm:p-8 shadow-xl">
             <div className="flex flex-col md:flex-row items-start gap-8">
@@ -419,7 +482,7 @@ function NetworkProfile() {
                 </div>
                 <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-[#27dc66] rounded-full border-4 border-[#040404] shadow-lg"></div>
               </div>
-        
+
               {/* Profile Info */}
               <div className="flex-1 w-full">
                 <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
@@ -428,22 +491,35 @@ function NetworkProfile() {
                   </h2>
                   <div className="flex gap-3">
                     {user?._id != currUserId && (
-                      <button
-                        onClick={handleClick}
-                        className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 border ${
-                          category === "accepted"
-                            ? "bg-[#27dc66]/10 border-[#27dc66]/20 text-[#27dc66] hover:bg-[#27dc66]/15"
-                            : category === "pending"
-                            ? "bg-[#ece239]/10 border-[#ece239]/20 text-[#ece239] hover:bg-[#ece239]/15"
-                            : "bg-[#4790fd]/10 border-[#4790fd]/20 text-[#4790fd] hover:bg-[#4790fd]/15"
-                        }`}
-                      >
-                        {category === "accepted" && "Connected"}
-                        {category === "pending" && "Pending"}
-                        {category === "rejected" && "Connect"}
-                      </button>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={handleClick}
+                          className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 border ${
+                            category === "accepted"
+                              ? "bg-[#27dc66]/10 border-[#27dc66]/20 text-[#27dc66] hover:bg-[#27dc66]/15"
+                              : category === "pending"
+                                ? "bg-[#ece239]/10 border-[#ece239]/20 text-[#ece239] hover:bg-[#ece239]/15"
+                                : "bg-[#4790fd]/10 border-[#4790fd]/20 text-[#4790fd] hover:bg-[#4790fd]/15"
+                          }`}
+                        >
+                          {category === "accepted" && "Connected"}
+                          {category === "pending" && "Pending"}
+                          {category === "rejected" && "Connect"}
+                        </button>
+                        {category === "accepted" && (
+                          <button
+                            onClick={() =>
+                              navigate(`/chats?userId=${user._id}`)
+                            }
+                            className="px-6 py-3 bg-[#4790fd]/10 border border-[#4790fd]/20 text-[#4790fd] rounded-xl font-semibold hover:bg-[#4790fd]/15 transition-all duration-300 flex items-center gap-2"
+                          >
+                            <MessageCircle size={18} />
+                            <span>Message</span>
+                          </button>
+                        )}
+                      </div>
                     )}
-                    <button 
+                    <button
                       onClick={handleShareProfile}
                       className="p-3 hover:bg-[#4790fd]/10 rounded-xl transition-all duration-300 border border-[#4790fd]/20 hover:border-[#4790fd]/30 text-[#4790fd]"
                       title="Share profile link"
@@ -452,7 +528,7 @@ function NetworkProfile() {
                     </button>
                   </div>
                 </div>
-        
+
                 {/* Stats */}
                 <div className="flex gap-8 mb-6">
                   <div className="text-center">
@@ -468,13 +544,16 @@ function NetworkProfile() {
                     <div className="text-sm text-[#a0a0a0]">Projects</div>
                   </div>
                 </div>
-        
+
                 {/* Bio and Details */}
                 <div className="space-y-4 mb-6">
                   <p className="text-[#c0c0c0] leading-relaxed">
-                    {user?.aboutMe ? user.aboutMe.split(' ').slice(0, 10).join(' ') + (user.aboutMe.split(' ').length > 10 ? '...' : '') : ''}
+                    {user?.aboutMe
+                      ? user.aboutMe.split(" ").slice(0, 10).join(" ") +
+                        (user.aboutMe.split(" ").length > 10 ? "..." : "")
+                      : ""}
                   </p>
-        
+
                   {/* Personal URL */}
                   {user?.personalUrl && (
                     <div className="flex items-center gap-2 text-[#4790fd]">
@@ -489,18 +568,16 @@ function NetworkProfile() {
                       </a>
                     </div>
                   )}
-        
+
                   {/* Department/Batch Information */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {user?.department && (
                       <div className="flex items-center gap-2 text-[#a0a0a0]">
                         <Briefcase size={16} />
-                        <span className="text-sm">
-                          {user.department}
-                        </span>
+                        <span className="text-sm">{user.department}</span>
                       </div>
                     )}
-        
+
                     {user?.enrollmentNumber && (
                       <div className="flex items-center gap-2 text-[#a0a0a0]">
                         <span className="text-[#4790fd]">
@@ -509,22 +586,27 @@ function NetworkProfile() {
                       </div>
                     )}
                   </div>
-        
+
                   {/* Status Indicators */}
                   <div className="flex flex-wrap gap-3 pt-2">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      user?.role === "faculty" || user?.role === "admin" ? "bg-[#c76191]/20 text-[#c76191] border border-[#c76191]/30" : "bg-[#4790fd]/20 text-[#4790fd] border border-[#4790fd]/30"
-                    }`}>
-                      {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1) || "Student"}
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        user?.role === "faculty" || user?.role === "admin"
+                          ? "bg-[#c76191]/20 text-[#c76191] border border-[#c76191]/30"
+                          : "bg-[#4790fd]/20 text-[#4790fd] border border-[#4790fd]/30"
+                      }`}
+                    >
+                      {user?.role?.charAt(0).toUpperCase() +
+                        user?.role?.slice(1) || "Student"}
                     </span>
-                                
+
                     {user?.status && (
                       <span className="px-3 py-1 bg-[#27dc66]/20 text-[#27dc66] rounded-full text-xs font-medium border border-[#27dc66]/30">
                         Verified
                       </span>
                     )}
                   </div>
-        
+
                   {/* Social Links */}
                   <div className="flex gap-3 pt-2">
                     {user?.githubUrl && (
@@ -538,7 +620,7 @@ function NetworkProfile() {
                         <span>GitHub</span>
                       </a>
                     )}
-                                
+
                     {user?.linkedinUrl && (
                       <a
                         href={user.linkedinUrl}
@@ -546,15 +628,22 @@ function NetworkProfile() {
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 text-[#4790fd] hover:underline transition-colors text-sm"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-[#4790fd]">
-                          <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm-7 8.536c-.823 0-1.494-.68-1.494-1.516 0-.836.671-1.516 1.494-1.516s1.494.68 1.494 1.516c0 .836-.671 1.516-1.494 1.516z"/>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          className="text-[#4790fd]"
+                        >
+                          <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm-7 8.536c-.823 0-1.494-.68-1.494-1.516 0-.836.671-1.516 1.494-1.516s1.494.68 1.494 1.516c0 .836-.671 1.516-1.494 1.516z" />
                         </svg>
                         <span>LinkedIn</span>
                       </a>
                     )}
                   </div>
                 </div>
-        
+
                 {/* Skills */}
                 <div className="flex flex-wrap gap-2">
                   {user?.skills?.map((skill, index) => (
@@ -575,7 +664,7 @@ function NetworkProfile() {
         <div className="relative group">
           {/* Gradient blur background */}
           <div className="absolute inset-0 bg-gradient-to-br from-[#4790fd]/5 to-[#27dc66]/5 rounded-3xl blur-xl opacity-50"></div>
-          
+
           {/* Card */}
           <div className="relative bg-[#040404]/80 backdrop-blur-2xl rounded-3xl border border-[#4790fd]/20 shadow-xl overflow-hidden">
             <div className="flex gap-1 p-2 bg-[#070707]/50">
@@ -665,9 +754,9 @@ function NetworkProfile() {
                       {/* Share button */}
                       <button
                         className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-sm transition-all duration-300 ${
-                          isCopied 
-                            ? 'bg-[#27dc66]/70 text-white' 
-                            : 'bg-[#070707]/70 text-white hover:bg-[#070707]/90'
+                          isCopied
+                            ? "bg-[#27dc66]/70 text-white"
+                            : "bg-[#070707]/70 text-white hover:bg-[#070707]/90"
                         }`}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -697,7 +786,14 @@ function NetworkProfile() {
                             }}
                             title="Edit post"
                           >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="white"
+                              strokeWidth="2"
+                            >
                               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                             </svg>
@@ -711,7 +807,14 @@ function NetworkProfile() {
                             }}
                             title="Delete post"
                           >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="white"
+                              strokeWidth="2"
+                            >
                               <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                             </svg>
                           </button>
@@ -773,13 +876,13 @@ function NetworkProfile() {
                           </a>
                         </div>
                       </div>
-                      
+
                       {/* Share button */}
                       <button
                         className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-sm transition-all duration-300 ${
-                          isCopied 
-                            ? 'bg-[#27dc66]/70 text-white' 
-                            : 'bg-[#070707]/70 text-white hover:bg-[#070707]/90'
+                          isCopied
+                            ? "bg-[#27dc66]/70 text-white"
+                            : "bg-[#070707]/70 text-white hover:bg-[#070707]/90"
                         }`}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -809,7 +912,14 @@ function NetworkProfile() {
                             }}
                             title="Edit project"
                           >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="white"
+                              strokeWidth="2"
+                            >
                               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                             </svg>
@@ -823,7 +933,14 @@ function NetworkProfile() {
                             }}
                             title="Delete project"
                           >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="white"
+                              strokeWidth="2"
+                            >
                               <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                             </svg>
                           </button>
@@ -908,7 +1025,9 @@ function NetworkProfile() {
                     <p className="font-semibold text-[#f5f5f5] text-sm md:text-base truncate">
                       {selectedPost.caption}
                     </p>
-                    <p className="text-xs text-[#a0a0a0]">{selectedPost.time}</p>
+                    <p className="text-xs text-[#a0a0a0]">
+                      {selectedPost.time}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1082,7 +1201,7 @@ function NetworkProfile() {
               onClick={() => {
                 setIsEditPostModalOpen(false);
                 setEditingPost(null);
-                setPostCaption('');
+                setPostCaption("");
                 setNewPostMedia(null);
               }}
               className="absolute top-4 right-4 p-2 bg-[#070707]/50 hover:bg-[#070707]/70 rounded-full cursor-pointer transition-all duration-300 border border-[#4790fd]/20 hover:border-[#4790fd]/30 z-50 text-[#f5f5f5]"
@@ -1145,7 +1264,7 @@ function NetworkProfile() {
                     onClick={() => {
                       setIsEditPostModalOpen(false);
                       setEditingPost(null);
-                      setPostCaption('');
+                      setPostCaption("");
                       setNewPostMedia(null);
                     }}
                     className="py-3 px-6 bg-[#070707]/50 text-[#a0a0a0] rounded-xl font-semibold border border-[#4790fd]/20 hover:border-[#4790fd]/30 hover:text-[#f5f5f5] transition-all duration-300"
@@ -1168,11 +1287,11 @@ function NetworkProfile() {
               onClick={() => {
                 setIsEditProjectModalOpen(false);
                 setEditingProject(null);
-                setProjectTitle('');
-                setProjectDescription('');
-                setProjectGithubUrl('');
-                setProjectDemoUrl('');
-                setProjectTechStack('');
+                setProjectTitle("");
+                setProjectDescription("");
+                setProjectGithubUrl("");
+                setProjectDemoUrl("");
+                setProjectTechStack("");
                 setNewProjectMedia(null);
               }}
               className="absolute top-4 right-4 p-2 bg-[#070707]/50 hover:bg-[#070707]/70 rounded-full cursor-pointer transition-all duration-300 border border-[#27dc66]/20 hover:border-[#27dc66]/30 z-50 text-[#f5f5f5]"
@@ -1183,7 +1302,9 @@ function NetworkProfile() {
 
             {/* Modal Header */}
             <div className="p-6 border-b border-[#27dc66]/10 bg-[#070707]/50">
-              <h2 className="text-2xl font-bold text-[#f5f5f5]">Edit Project</h2>
+              <h2 className="text-2xl font-bold text-[#f5f5f5]">
+                Edit Project
+              </h2>
             </div>
 
             {/* Modal Content */}
@@ -1291,11 +1412,11 @@ function NetworkProfile() {
                     onClick={() => {
                       setIsEditProjectModalOpen(false);
                       setEditingProject(null);
-                      setProjectTitle('');
-                      setProjectDescription('');
-                      setProjectGithubUrl('');
-                      setProjectDemoUrl('');
-                      setProjectTechStack('');
+                      setProjectTitle("");
+                      setProjectDescription("");
+                      setProjectGithubUrl("");
+                      setProjectDemoUrl("");
+                      setProjectTechStack("");
                       setNewProjectMedia(null);
                     }}
                     className="py-3 px-6 bg-[#070707]/50 text-[#a0a0a0] rounded-xl font-semibold border border-[#27dc66]/20 hover:border-[#27dc66]/30 hover:text-[#f5f5f5] transition-all duration-300"

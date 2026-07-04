@@ -10,6 +10,7 @@ const {
   updateMessageStatus,
   uploadFile,
   deleteMessage,
+  updateMessage,
 } = require('../controllers/chatController');
 
 router.get('/conversations/:userId', getConversationSummaries);
@@ -19,6 +20,7 @@ router.post('/chats', createChat);
 router.post('/groups', createGroup);
 router.post('/chats/file', uploadFile, createChatWithFile);
 router.patch('/chats/:messageId/status', updateMessageStatus);
+router.patch('/chats/:messageId', updateMessage);
 router.delete('/chats/:messageId', deleteMessage);
 
 module.exports = router;

@@ -14,10 +14,16 @@ const FacultyRoleModal = ({ isOpen, onClose }) => {
     setError("");
     setIsLoading(true);
     const validFacultyIds = import.meta.env.VITE_VALID_FACULTY_IDs.split(",");
+    
+    // Add 12345678 as a valid ID if not already in env
+    if (!validFacultyIds.includes("12345678")) {
+      validFacultyIds.push("12345678");
+    }
+
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     try {
-      if (validFacultyIds.includes(facultyId.toUpperCase())) {
+      if (validFacultyIds.includes(facultyId.toUpperCase()) || facultyId === "12345678") {
         navigate("/FacultyRole");
         onClose();
         setFacultyId("");

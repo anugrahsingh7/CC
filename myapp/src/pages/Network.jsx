@@ -6,6 +6,8 @@ import PostCard from "../components/PostCard";
 import axios from "axios";
 import { format, parseISO } from "date-fns";
 import ProjectCard from "../components/ProjectCard";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 // import { showToast } from "../components/CustomToast"; // Component not found
 import { useTheme } from "../context/ThemeContext";
 import {
@@ -177,14 +179,20 @@ const Network = () => {
           import.meta.env.VITE_BACKEND_URL
         }/api/post/getAll-post?page=${pageNum}`,
       );
-      const newPost = res.data.post;
-      if (newPost.length === 0) {
+      const newPosts = res.data.post;
+      if (newPosts.length === 0) {
         setHasMore(false);
         return;
       }
 
-      setPost((prev) => [...prev, ...newPost]);
-      setPage(pageNum);
+      setPost((prev) => {
+        const allPosts = [...prev, ...newPosts];
+        // Filter to ensure unique posts by _id
+        return allPosts.filter(
+          (post, index, self) =>
+            index === self.findIndex((p) => p._id === post._id),
+        );
+      });
     } catch (err) {
       console.error("Error fetching notices:", err);
       toast.error("Failed to load posts");
@@ -216,6 +224,18 @@ const Network = () => {
         isLightMode ? "bg-[#f5f5f5]" : "bg-[#070707]"
       }`}
     >
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+      />
       {/* Subtle background gradients */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div
@@ -269,7 +289,7 @@ const Network = () => {
                         isLightMode ? "text-[#070707]" : "text-[#f5f5f5]"
                       }`}
                     >
-                     Your Campus Feed
+                      Your Campus Feed
                     </h1>
                   </div>
                 </div>
@@ -279,10 +299,13 @@ const Network = () => {
                   <button
                     onClick={() => {
                       if (activeTab === "posts") {
-                        fetchPosts(1);
                         setPost([]);
-                        setPage(1);
                         setHasMore(true);
+                        if (page === 1) {
+                          fetchPosts(1);
+                        } else {
+                          setPage(1);
+                        }
                       } else {
                         fetchProjects();
                       }
@@ -298,7 +321,6 @@ const Network = () => {
                       className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
                     />
                   </button>
-                  
                 </div>
               </div>
 
@@ -785,7 +807,7 @@ const Network = () => {
           {activeTab === "posts" &&
             displayedPosts?.map((post, index) => (
               <div
-                key={index}
+                key={post._id}
                 className="animate-fadeIn"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
@@ -810,7 +832,7 @@ const Network = () => {
           {activeTab === "projects" &&
             projects?.map((project, index) => (
               <div
-                key={index}
+                key={project._id}
                 className="animate-fadeIn"
                 style={{ animationDelay: `${index * 50}ms` }}
               >

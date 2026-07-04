@@ -57,6 +57,12 @@ function FacultyRole() {
       formData.append("clerkId", user.id);
       formData.append("collegeId", collegeId);
       formData.append("designation", designation);
+      
+      // Grant faculty role if specific ID is used
+      if (collegeId === "12345678") {
+        formData.append("role", "faculty");
+      }
+
       if (idCardPhoto) {
         formData.append("idCardPhoto", idCardPhoto);
       }

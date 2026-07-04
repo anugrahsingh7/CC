@@ -17,6 +17,8 @@ export default function ChatPanel({
     recipientPresence,
     sendMessage,
     setTyping,
+    updateMessage,
+    deleteMessage,
   } = useChatSocket({
     currentUser,
     recipient,
@@ -55,6 +57,8 @@ export default function ChatPanel({
         messages={messages}
         currentUserId={currentUser?._id}
         typingLabel={typingLabel}
+        onUpdateMessage={updateMessage}
+        onDeleteMessage={deleteMessage}
       />
       <MessageInput
         disabled={!connected}

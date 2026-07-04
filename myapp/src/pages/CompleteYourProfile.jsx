@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useUser } from "@clerk/clerk-react";
-// import { showToast } from "../components/CustomToast"; // Component not found
+import { toast, ToastContainer } from "react-toastify";
 import axios from "axios";
 import { useTheme } from "../context/ThemeContext";
 import {
@@ -21,7 +21,6 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
 
 const CompleteYourProfile = () => {
   const { user } = useUser();
@@ -97,7 +96,7 @@ const CompleteYourProfile = () => {
       setStatus(data.status);
     } catch (error) {
       console.error("Error fetching profile:", error);
-      toast.error("Failed to load profile.");
+      // Removed toast.error to prevent spam
     }
   }, [user?.id]);
 
@@ -132,6 +131,7 @@ const CompleteYourProfile = () => {
       formData.append("clerkId", user?.id);
       if (enrollmentNumber)
         formData.append("enrollmentNumber", enrollmentNumber);
+
       if (githubUrl) formData.append("githubUrl", githubUrl);
       if (linkedinUrl) formData.append("linkedinUrl", linkedinUrl);
       if (personalUrl) formData.append("personalUrl", personalUrl);
@@ -149,7 +149,7 @@ const CompleteYourProfile = () => {
       );
 
       toast.success("Profile updated successfully!");
-      
+
       // Navigate to home after profile update
       navigate("/");
     } catch (error) {
@@ -517,7 +517,9 @@ const CompleteYourProfile = () => {
                           disabled={status}
                           onChange={(e) => {
                             const inputValue = e.target.value;
-                            const wordCount = inputValue.trim() ? inputValue.trim().split(/\s+/).length : 0;
+                            const wordCount = inputValue.trim()
+                              ? inputValue.trim().split(/\s+/).length
+                              : 0;
                             if (wordCount <= 10) {
                               setAboutMe(inputValue);
                             }
@@ -526,7 +528,10 @@ const CompleteYourProfile = () => {
                           placeholder="Share your story, interests, and what drives you... (max 10 words)"
                         />
                         <div className="absolute bottom-3 right-3 text-xs text-gray-400 dark:text-[#a0a0a0]">
-                          {aboutMe.trim() ? aboutMe.trim().split(/\s+/).length : 0}/10 words
+                          {aboutMe.trim()
+                            ? aboutMe.trim().split(/\s+/).length
+                            : 0}
+                          /10 words
                         </div>
                       </div>
                     </div>

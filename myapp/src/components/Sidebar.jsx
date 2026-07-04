@@ -42,7 +42,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       setMainUser(data);
     } catch (error) {
       console.error("Error fetching profile:", error);
-      toast.error("Failed to load profile.");
+      // Removed toast.error to prevent spam
     }
   };
 

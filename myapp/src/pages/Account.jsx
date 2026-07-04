@@ -56,7 +56,7 @@ const Account = () => {
       setMainUser(response.data);
     } catch (error) {
       console.error("Error fetching profile:", error);
-      toast.error("Failed to load profile.");
+      // Removed toast.error to prevent spam
     }
   };
 
@@ -274,23 +274,25 @@ const Account = () => {
                 variant="primary"
               />
 
-              {!mainUser?.profileComplete ? (
-                <MenuCard
-                  icon={UserPen}
-                  label="Complete Your Profile"
-                  description="Add information to complete your profile"
-                  onClick={() => navigate("/CompleteYourProfile")}
-                  variant="warning"
-                  badge="Required"
-                />
-              ) : (
-                <MenuCard
-                  icon={UserPen}
-                  label="Edit Profile"
-                  description="Edit your profile information"
-                  onClick={() => navigate("/YourProfile")}
-                  variant="success"
-                />
+              {mainUser?.role !== "faculty" && (
+                !mainUser?.profileComplete ? (
+                  <MenuCard
+                    icon={UserPen}
+                    label="Complete Your Profile"
+                    description="Add information to complete your profile"
+                    onClick={() => navigate("/CompleteYourProfile")}
+                    variant="warning"
+                    badge="Required"
+                  />
+                ) : (
+                  <MenuCard
+                    icon={UserPen}
+                    label="Edit Profile"
+                    description="Edit your profile information"
+                    onClick={() => navigate("/YourProfile")}
+                    variant="success"
+                  />
+                )
               )}
 
               <MenuCard

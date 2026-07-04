@@ -45,6 +45,18 @@ function reducer(state, action) {
           };
         }),
       };
+    case "UPDATE_MESSAGE":
+      return {
+        ...state,
+        messages: state.messages.map((message) =>
+          message._id === action.payload._id ? action.payload : message
+        ),
+      };
+    case "DELETE_MESSAGE":
+      return {
+        ...state,
+        messages: state.messages.filter((message) => message._id !== action.messageId),
+      };
     case "SET_TYPING":
       return {
         ...state,
@@ -160,6 +172,15 @@ export default function useChatSocket({
       dispatch({ type: "UPDATE_MESSAGE_STATUS", messageId, messageIds, status });
     };
 
+    const handleMessageUpdated = (message) => {
+      if (message.roomId !== roomId) return;
+      dispatch({ type: "UPDATE_MESSAGE", payload: message });
+    };
+
+    const handleMessageDeleted = ({ messageId, deletedForEveryone }) => {
+      dispatch({ type: "DELETE_MESSAGE", messageId });
+    };
+
     const handleTypingStatus = ({ roomId: incomingRoomId, userId, isTyping, userName }) => {
       if (incomingRoomId !== roomId || userId === currentUser._id) return;
       dispatch({
@@ -189,6 +210,8 @@ export default function useChatSocket({
     socket.on("receive_message", handleMessageReceived);
     socket.on("message_sent", handleMessageSent);
     socket.on("message_status", handleMessageStatus);
+    socket.on("message_updated", handleMessageUpdated);
+    socket.on("message_deleted", handleMessageDeleted);
     socket.on("typing_status", handleTypingStatus);
     socket.on("presence:update", handlePresenceUpdate);
     socket.on("conversation:update", handleConversationUpdate);
@@ -199,6 +222,8 @@ export default function useChatSocket({
       socket.off("receive_message", handleMessageReceived);
       socket.off("message_sent", handleMessageSent);
       socket.off("message_status", handleMessageStatus);
+      socket.off("message_updated", handleMessageUpdated);
+      socket.off("message_deleted", handleMessageDeleted);
       socket.off("typing_status", handleTypingStatus);
       socket.off("presence:update", handlePresenceUpdate);
       socket.off("conversation:update", handleConversationUpdate);
@@ -312,6 +337,37 @@ export default function useChatSocket({
     }
   };
 
+  const updateMessage = async (messageId, newContent) => {
+    try {
+      const response = await axios.patch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/chat/chats/${messageId}`,
+        { content: newContent, userId: currentUser._id }
+      );
+      const updatedMessage = response.data;
+      dispatch({ type: "UPDATE_MESSAGE", payload: updatedMessage });
+      socket.emit("message_updated", { message: updatedMessage });
+    } catch (error) {
+      console.error("Error updating message:", error);
+    }
+  };
+
+  const deleteMessage = async (messageId) => {
+    try {
+      const response = await axios.delete(
+        `${import.meta.env.VITE_BACKEND_URL}/api/chat/chats/${messageId}`,
+        { data: { userId: currentUser._id } }
+      );
+      dispatch({ type: "DELETE_MESSAGE", messageId });
+      socket.emit("message_deleted", {
+        messageId,
+        roomId,
+        deletedForEveryone: response.data.deletedForEveryone,
+      });
+    } catch (error) {
+      console.error("Error deleting message:", error);
+    }
+  };
+
   const recipientPresence = recipient?._id
     ? state.presence[recipient._id]
     : undefined;
@@ -329,5 +385,7 @@ export default function useChatSocket({
     recipientPresence,
     sendMessage,
     setTyping,
+    updateMessage,
+    deleteMessage,
   };
 }

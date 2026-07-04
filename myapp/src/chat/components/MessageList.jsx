@@ -25,6 +25,8 @@ export default function MessageList({
   messages,
   currentUserId,
   typingLabel,
+  onUpdateMessage,
+  onDeleteMessage,
 }) {
   const containerRef = useRef(null);
   const bottomRef = useRef(null);
@@ -83,6 +85,8 @@ export default function MessageList({
               <MessageBubble
                 message={message}
                 isOwnMessage={message.sender?._id === currentUserId}
+                onUpdateMessage={onUpdateMessage}
+                onDeleteMessage={onDeleteMessage}
               />
             </div>
           );

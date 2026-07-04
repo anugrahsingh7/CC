@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { useUser } from "@clerk/clerk-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import ConnectionRequestsModal from "../components/ConnectionRequestsModal";
 import ChatList from "../chat/components/ChatList";
 import ChatPanel from "../chat/components/ChatPanel";
@@ -13,24 +13,26 @@ const normalizeDesignation = (designation) => (designation || "").toLowerCase();
 
 const mergeConversations = (users, conversations, currentUserId) => {
   const summaryMap = new Map(
-    conversations.map((conversation) => [conversation._id, conversation])
+    conversations.map((conversation) => [conversation._id, conversation]),
   );
 
-  const directConversations = users
-    .map((connectedUser) => {
-      const summary = summaryMap.get(connectedUser._id);
+  const directConversations = users.map((connectedUser) => {
+    const summary = summaryMap.get(connectedUser._id);
 
-      return {
-        ...connectedUser,
-        roomId: summary?.roomId || buildRoomId(currentUserId, connectedUser._id),
-        lastMessage: summary?.lastMessage || null,
-        unreadCount: summary?.unreadCount || 0,
-        status: summary?.status ?? connectedUser.status,
-      };
-    })
-  const groupConversations = conversations.filter((conversation) => conversation.isGroup);
+    return {
+      ...connectedUser,
+      roomId: summary?.roomId || buildRoomId(currentUserId, connectedUser._id),
+      lastMessage: summary?.lastMessage || null,
+      unreadCount: summary?.unreadCount || 0,
+      status: summary?.status ?? connectedUser.status,
+    };
+  });
+  const groupConversations = conversations.filter(
+    (conversation) => conversation.isGroup,
+  );
 
-  return [...directConversations, ...groupConversations].sort((first, second) => {
+  return [...directConversations, ...groupConversations].sort(
+    (first, second) => {
       const firstTime = first.lastMessage?.createdAt
         ? new Date(first.lastMessage.createdAt).getTime()
         : 0;
@@ -39,18 +41,21 @@ const mergeConversations = (users, conversations, currentUserId) => {
         : 0;
 
       return secondTime - firstTime;
-    });
+    },
+  );
 };
 
 export default function ChatApp() {
   const { user: clerkUser } = useUser();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const userIdFromUrl = searchParams.get("userId");
 
   const [currentUser, setCurrentUser] = useState(null);
   const [connections, setConnections] = useState([]);
   const [conversationSummaries, setConversationSummaries] = useState([]);
-  const [selectedRecipientId, setSelectedRecipientId] = useState(null);
-  const [showChat, setShowChat] = useState(false);
+  const [selectedRecipientId, setSelectedRecipientId] = useState(userIdFromUrl);
+  const [showChat, setShowChat] = useState(!!userIdFromUrl);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
@@ -72,26 +77,50 @@ export default function ChatApp() {
       try {
         setIsLoading(true);
         const profileResponse = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/user/profile/${clerkUser.id}`
+          `${import.meta.env.VITE_BACKEND_URL}/api/user/profile/${clerkUser.id}`,
         );
 
         const user = profileResponse.data;
         setCurrentUser(user);
 
-        const [connectionsResponse, conversationsResponse, pendingResponse] =
-          await Promise.all([
-            axios.get(
-              `${import.meta.env.VITE_BACKEND_URL}/api/user/getAllConnections/${user._id}`
-            ),
-            axios.get(
-              `${import.meta.env.VITE_BACKEND_URL}/api/chat/conversations/${user._id}`
-            ),
-            axios.get(
-              `${import.meta.env.VITE_BACKEND_URL}/api/user/getPendingConnections/${user._id}`
-            ),
-          ]);
+        const [
+          connectionsResponse,
+          allUsersResponse,
+          conversationsResponse,
+          pendingResponse,
+        ] = await Promise.all([
+          axios.get(
+            `${import.meta.env.VITE_BACKEND_URL}/api/user/getAllConnections/${user._id}`,
+          ),
+          axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/user/getAllUsers`),
+          axios.get(
+            `${import.meta.env.VITE_BACKEND_URL}/api/chat/conversations/${user._id}`,
+          ),
+          axios.get(
+            `${import.meta.env.VITE_BACKEND_URL}/api/user/getPendingConnections/${user._id}`,
+          ),
+        ]);
 
-        setConnections(connectionsResponse.data);
+        const officialConnections = connectionsResponse.data;
+        const allUsers = allUsersResponse.data;
+
+        let filteredConnections;
+        if (user.role === "faculty") {
+          filteredConnections = allUsers.filter((u) => u._id !== user._id);
+        } else {
+          const facultyMembers = allUsers.filter(
+            (u) => u.role === "faculty" && u._id !== user._id,
+          );
+          const connectionIds = new Set(officialConnections.map((c) => c._id));
+          filteredConnections = [...officialConnections];
+          facultyMembers.forEach((f) => {
+            if (!connectionIds.has(f._id)) {
+              filteredConnections.push(f);
+            }
+          });
+        }
+
+        setConnections(filteredConnections);
         setConversationSummaries(conversationsResponse.data);
         setPendingCount(pendingResponse.data.length || 0);
       } catch (error) {
@@ -110,7 +139,7 @@ export default function ChatApp() {
     return mergeConversations(
       connections,
       conversationSummaries,
-      currentUser._id
+      currentUser._id,
     )
       .filter((user) => {
         const query = searchQuery.trim().toLowerCase();
@@ -129,13 +158,24 @@ export default function ChatApp() {
         if (activeFilter === "groups") return false;
         const designation = normalizeDesignation(user.designation);
         if (activeFilter === "faculty") return designation.includes("faculty");
-        if (activeFilter === "students") return !designation.includes("faculty");
+        if (activeFilter === "students")
+          return !designation.includes("faculty");
         return true;
       });
-  }, [activeFilter, connections, conversationSummaries, currentUser?._id, searchQuery]);
+  }, [
+    activeFilter,
+    connections,
+    conversationSummaries,
+    currentUser?._id,
+    searchQuery,
+  ]);
 
   useEffect(() => {
-    if (!selectedRecipientId && mergedConversationList.length > 0 && !isMobile) {
+    if (
+      !selectedRecipientId &&
+      mergedConversationList.length > 0 &&
+      !isMobile
+    ) {
       setSelectedRecipientId(mergedConversationList[0]._id);
     }
   }, [isMobile, mergedConversationList, selectedRecipientId]);
@@ -145,15 +185,20 @@ export default function ChatApp() {
     : [];
 
   const selectedRecipient =
-    fullConversationList.find((user) => user._id === selectedRecipientId) || null;
+    fullConversationList.find((user) => user._id === selectedRecipientId) ||
+    null;
 
-  const handleConversationUpdate = ({ participantId, conversationType, message }) => {
+  const handleConversationUpdate = ({
+    participantId,
+    conversationType,
+    message,
+  }) => {
     setConversationSummaries((previous) => {
       const next = [...previous];
       const existingIndex = next.findIndex(
         (conversation) =>
           conversation._id === participantId &&
-          Boolean(conversation.isGroup) === (conversationType === "group")
+          Boolean(conversation.isGroup) === (conversationType === "group"),
       );
 
       const summaryPayload = {
@@ -198,20 +243,44 @@ export default function ChatApp() {
   const refreshConnections = async () => {
     if (!currentUser?._id) return;
 
-    const [connectionsResponse, conversationsResponse, pendingResponse] =
-      await Promise.all([
-        axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/user/getAllConnections/${currentUser._id}`
-        ),
-        axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/chat/conversations/${currentUser._id}`
-        ),
-        axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/user/getPendingConnections/${currentUser._id}`
-        ),
-      ]);
+    const [
+      connectionsResponse,
+      allUsersResponse,
+      conversationsResponse,
+      pendingResponse,
+    ] = await Promise.all([
+      axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/api/user/getAllConnections/${currentUser._id}`,
+      ),
+      axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/user/getAllUsers`),
+      axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/api/chat/conversations/${currentUser._id}`,
+      ),
+      axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/api/user/getPendingConnections/${currentUser._id}`,
+      ),
+    ]);
 
-    setConnections(connectionsResponse.data);
+    const officialConnections = connectionsResponse.data;
+    const allUsers = allUsersResponse.data;
+
+    let filteredConnections;
+    if (currentUser.role === "faculty") {
+      filteredConnections = allUsers.filter((u) => u._id !== currentUser._id);
+    } else {
+      const facultyMembers = allUsers.filter(
+        (u) => u.role === "faculty" && u._id !== currentUser._id,
+      );
+      const connectionIds = new Set(officialConnections.map((c) => c._id));
+      filteredConnections = [...officialConnections];
+      facultyMembers.forEach((f) => {
+        if (!connectionIds.has(f._id)) {
+          filteredConnections.push(f);
+        }
+      });
+    }
+
+    setConnections(filteredConnections);
     setConversationSummaries(conversationsResponse.data);
     setPendingCount(pendingResponse.data.length || 0);
   };
@@ -219,7 +288,9 @@ export default function ChatApp() {
   return (
     <div className="h-dvh w-full bg-[#040404]">
       <div className="flex h-full w-full items-stretch overflow-hidden border border-[#4790fd]/20 bg-[#070707] shadow-[0_24px_60px_-28px_rgba(0,0,0,0.8)]">
-        <div className={`${isMobile && showChat ? "hidden" : "flex"} min-h-0 w-full md:w-auto`}>
+        <div
+          className={`${isMobile && showChat ? "hidden" : "flex"} min-h-0 w-full md:w-auto`}
+        >
           <div className="flex h-full min-h-0 w-full flex-col border-r border-[#4790fd]/20 md:w-[380px] lg:w-[420px]">
             <ChatList
               currentUser={currentUser}
@@ -239,8 +310,8 @@ export default function ChatApp() {
                   previous.map((item) =>
                     item._id === conversation._id
                       ? { ...item, unreadCount: 0 }
-                      : item
-                  )
+                      : item,
+                  ),
                 );
                 if (isMobile) setShowChat(true);
               }}
@@ -253,7 +324,8 @@ export default function ChatApp() {
         >
           {isLoading ? (
             <div className="flex flex-1 items-center justify-center bg-[#040404]">
-              <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#ffffff]/15 border-t-[#4790fd]" />            </div>
+              <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#ffffff]/15 border-t-[#4790fd]" />{" "}
+            </div>
           ) : (
             <ChatPanel
               currentUser={currentUser}

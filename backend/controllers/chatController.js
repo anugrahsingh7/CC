@@ -417,5 +417,35 @@ exports.deleteMessage = async (req, res) => {
   }
 };
 
+// Update a message content
+exports.updateMessage = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { content, userId } = req.body;
+
+    const message = await Message.findById(messageId);
+
+    if (!message) {
+      return res.status(404).json({ error: "Message not found" });
+    }
+
+    // Check if user is the sender
+    if (message.sender.toString() !== userId) {
+      return res.status(403).json({ error: "Not authorized to edit this message" });
+    }
+
+    message.content = content;
+    message.isEdited = true;
+    message.editedAt = new Date();
+
+    await message.save();
+    const populatedMessage = await populateMessage(Message.findById(message._id));
+    res.json(populatedMessage);
+  } catch (err) {
+    console.error("Error updating message:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
 // Multer upload middleware
 exports.uploadFile = upload.single("file");
